@@ -147,6 +147,17 @@ class BPR:
     def sigmoid(self, x):
         return 1.0 / (1.0 + np.exp(-x))
 
+    def process_seqs(self, iseqs):
+        out_seqs = []
+        out_dates = []
+        labs = []
+        for seq in iseqs:
+            for i in range(1, len(seq)):
+                tar = seq[-i]
+                labs += [tar]
+                out_seqs += [seq[:-i]]
+        return out_seqs, labs
+
 
 if __name__ == '__main__':
     # taobao
@@ -157,25 +168,33 @@ if __name__ == '__main__':
         item_key = 'ItemId'
 
     elif dataset == 'Retailrocket':
-        session_key = 'visitorid'
-        item_key = 'itemid'
+        session_key = 'UserId'
+        item_key = 'ItemId'
     else:
         raise FileNotFoundError
 
     data_root = '../data/' + dataset
 
-    interactions = pd.read_csv(os.path.join(data_root, 'interactions.csv'))
-    interactions = interactions[:1000]
+    interactions = pd.read_csv(os.path.join(data_root, 'train.tsv'), sep='\t')
+    test_data = pd.read_csv(os.path.join(data_root, 'test.tsv'), sep='\t')
+
+    # sample
+    interactions = interactions.sample(frac=0.2, replace=False, weights=None, random_state=None, axis=0)
+    test_data = test_data.sample(frac=0.2, replace=False, weights=None, random_state=None, axis=0)
+    # sample
+
+    # interactions = interactions[:1000]
     session_ids = []
     item_ids = []
     labels = []
     users = interactions[session_key].unique()
     # users = users[:2]
+
     for user in users:
         clicks = interactions[interactions[session_key] == user]
-        session_ids.extend(clicks[session_key].values[:-1])
-        item_ids.extend(clicks[item_key].values[:-1])
-        labels.append(clicks[item_key].values[-1])
+        session_ids.extend(clicks[session_key].values)
+        item_ids.extend(clicks[item_key].values)
+        # labels.append(clicks[item_key].values[-1])
     train_data = pd.DataFrame({session_key: session_ids,
                                item_key: item_ids})
     start = datetime.now()
@@ -187,10 +206,17 @@ if __name__ == '__main__':
     # test
     rec_5, rec_10 = 0, 0
     mrr_5, mrr_10 = 0, 0
+    test_users = test_data[session_key].unique()
     candidates = train_data[item_key].unique()
-    for user in users:
-        input_item_ids = interactions[interactions[session_key] == user][item_key].values[:-1]
-        label = interactions[interactions[session_key] == user][item_key].values[-1]
+
+    test_ids = []
+    test_ts = []
+    for user in test_users:
+        clicks = test_data[test_data[session_key] == user]
+        test_ids.append(clicks[item_key].values)
+    out_seqs, out_dates, labs = bpr.process_seqs(test_ids, test_ts)
+
+    for input_item_ids , label in zip(out_seqs, labs):
         preds = bpr.predict_next(input_item_ids, candidates)
         if label in preds:
             rank = np.where(preds == label)[0][0] + 1
@@ -199,6 +225,17 @@ if __name__ == '__main__':
                 mrr_5 += 1 / rank
             rec_10 += 1
             mrr_10 += 1 / rank
+    # for user in users:
+    #     input_item_ids = test_data[test_data[session_key] == user][item_key].values[:-1]
+    #     label = test_data[test_data[session_key] == user][item_key].values[-1]
+    #     preds = bpr.predict_next(input_item_ids, candidates)
+    #     if label in preds:
+    #         rank = np.where(preds == label)[0][0] + 1
+    #         if rank <= 5:
+    #             rec_5 += 1
+    #             mrr_5 += 1 / rank
+    #         rec_10 += 1
+    #         mrr_10 += 1 / rank
 
     test_num = len(users)
     rec5 = rec_5 / test_num
@@ -208,8 +245,7 @@ if __name__ == '__main__':
     print('Rec@5 is: %.4f, Rec@10 is: %.4f' % (rec5, rec10))
     print('MRR@5 is: %.4f, MRR@10 is: %.4f' % (mrr5, mrr10))
     # with open(os.path.join(data_root, 'results.txt'), 'w') as f:
-    with open('./results.txt', 'w') as f:
+    with open('./bpr_results.txt', 'w') as f:
         f.write(str(rec5)[:6] + ' ' + str(rec10)[:6] + ' ' + str(mrr5)[:6] + ' ' + str(mrr10)[:6])
 
-# 需要构建test_data,保证test_data中的item全部在train_data中出现过
 
