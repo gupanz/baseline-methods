@@ -143,17 +143,19 @@ class ItemKNN:
         print('Rec@5 is: %.4f, Rec@10 is: %.4f' % (rec5, rec10))
         print('MRR@5 is: %.4f, MRR@10 is: %.4f' % (mrr5, mrr10))
 
-    def process_seqs(self, iseqs, idates):
+        with open('./itemKNN_results.txt', 'w') as f:
+            f.write(str(rec5)[:6] + ' ' + str(rec10)[:6] + ' ' + str(mrr5)[:6] + ' ' + str(mrr10)[:6])
+
+    def process_seqs(self, iseqs):
         out_seqs = []
         out_dates = []
         labs = []
-        for seq, date in zip(iseqs, idates):
+        for seq in iseqs:
             for i in range(1, len(seq)):
                 tar = seq[-i]
                 labs += [tar]
                 out_seqs += [seq[:-i]]
-                out_dates += [date]
-        return out_seqs, out_dates, labs
+        return out_seqs, labs
 
 
 if __name__ == '__main__':
@@ -215,7 +217,7 @@ if __name__ == '__main__':
         clicks = test_data[test_data[session_key] == user]
         test_ids.append(clicks[item_key].values)
         test_ts.append(clicks[time_key].values)
-    out_seqs, out_dates, labs = itemknn.process_seqs(test_ids, test_ts)
+    out_seqs, labs = itemknn.process_seqs(test_ids, test_ts)
 
     itemknn.predict_next(out_seqs, labs)
 
