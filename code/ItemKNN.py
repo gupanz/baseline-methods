@@ -194,8 +194,6 @@ if __name__ == '__main__':
     users = interactions[session_key].unique()
     test_users = test_data[session_key].unique()
 
-    print(users[:100])
-    print(test_users[:100])
 
     # users = users[:2]
     for user in users:
@@ -215,8 +213,8 @@ if __name__ == '__main__':
     for user in test_users:
         clicks = test_data[test_data[session_key] == user]
         test_ids.append(clicks[item_key].values)
-        test_ts.append(clicks[time_key].values)
-    out_seqs, labs = itemknn.process_seqs(test_ids, test_ts)
+        # test_ts.append(clicks[time_key].values)
+    out_seqs, labs = itemknn.process_seqs(test_ids)
 
     itemknn.predict_next(out_seqs, labs)
 
