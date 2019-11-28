@@ -173,6 +173,7 @@ if __name__ == '__main__':
     interactions = pd.read_csv(os.path.join(data_root, 'train.tsv'), sep='\t')
     test_data = pd.read_csv(os.path.join(data_root, 'test.tsv'), sep='\t')
     print(interactions.head())
+    print("---------")
     # interactions = interactions[:1000]
     itemknn = ItemKNN(session_key=session_key, item_key=item_key, time_key=time_key)
     session_ids = []
@@ -181,8 +182,12 @@ if __name__ == '__main__':
     labels = []
     ts = []
     test_ts = []
+
     users = interactions[session_key].unique()
     test_users = test_data[session_key].unique()
+
+    print(users[:100])
+    print(test_users[:100])
 
     # users = users[:2]
     for user in users:
