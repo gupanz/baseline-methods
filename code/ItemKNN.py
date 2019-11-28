@@ -160,7 +160,7 @@ class ItemKNN:
 
 if __name__ == '__main__':
 
-    dataset = 'Taobao'
+    dataset = 'Retailrocket'
     if dataset == 'Taobao':
       session_key = 'SessionId'
       item_key = 'ItemId'
@@ -177,8 +177,7 @@ if __name__ == '__main__':
     test_data = pd.read_csv(os.path.join(data_root, 'test.tsv'), sep='\t')
 
     # sample
-    interactions = interactions.sample(frac=0.2, replace=False, weights=None, random_state=None, axis=0)
-    test_data = test_data.sample(frac=0.2, replace=False, weights=None, random_state=None, axis=0)
+
     # sample
 
     print(interactions.head())
