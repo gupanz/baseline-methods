@@ -173,8 +173,8 @@ if __name__ == '__main__':
         raise FileNotFoundError
 
     data_root = '../data/' + dataset
-    interactions = pd.read_csv(os.path.join(data_root, 'train.tsv'), sep='\t')
-    test_data = pd.read_csv(os.path.join(data_root, 'test.tsv'), sep='\t')
+    interactions = pd.read_csv(os.path.join(data_root, 'train_mini.tsv'), sep='\t')
+    test_data = pd.read_csv(os.path.join(data_root, 'test_mini.tsv'), sep='\t')
 
     # sample
 
