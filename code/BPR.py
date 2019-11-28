@@ -178,9 +178,6 @@ if __name__ == '__main__':
     interactions = pd.read_csv(os.path.join(data_root, 'train_mini.tsv'), sep='\t')
     test_data = pd.read_csv(os.path.join(data_root, 'test_mini.tsv'), sep='\t')
 
-    # sample
-    # sample
-
     # interactions = interactions[:1000]
     session_ids = []
     item_ids = []
@@ -199,7 +196,7 @@ if __name__ == '__main__':
     bpr = BPR(session_key=session_key, item_key=item_key)
     bpr.fit(train_data)
     end = datetime.now()
-    print('training time: %.4f minutes' % ((end-start).seconds / 60))
+    print('training time: %.4f minutes' % ((end - start).seconds / 60))
 
     # test
     rec_5, rec_10 = 0, 0
@@ -212,9 +209,9 @@ if __name__ == '__main__':
     for user in test_users:
         clicks = test_data[test_data[session_key] == user]
         test_ids.append(clicks[item_key].values)
-    out_seqs, out_dates, labs = bpr.process_seqs(test_ids, test_ts)
+    out_seqs, labs = bpr.process_seqs(test_ids)
 
-    for input_item_ids , label in zip(out_seqs, labs):
+    for input_item_ids, label in zip(out_seqs, labs):
         preds = bpr.predict_next(input_item_ids, candidates)
         if label in preds:
             rank = np.where(preds == label)[0][0] + 1
@@ -235,7 +232,7 @@ if __name__ == '__main__':
     #         rec_10 += 1
     #         mrr_10 += 1 / rank
 
-    test_num = len(users)
+    test_num = len(test_users)
     rec5 = rec_5 / test_num
     rec10 = rec_10 / test_num
     mrr5 = mrr_5 / test_num
@@ -243,7 +240,5 @@ if __name__ == '__main__':
     print('Rec@5 is: %.4f, Rec@10 is: %.4f' % (rec5, rec10))
     print('MRR@5 is: %.4f, MRR@10 is: %.4f' % (mrr5, mrr10))
     # with open(os.path.join(data_root, 'results.txt'), 'w') as f:
-    with open('./bpr_results.txt', 'w') as f:
+    with open('../results/bpr_results.txt', 'w') as f:
         f.write(str(rec5)[:6] + ' ' + str(rec10)[:6] + ' ' + str(mrr5)[:6] + ' ' + str(mrr10)[:6])
-
-

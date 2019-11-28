@@ -65,7 +65,7 @@ class ItemKNN:
         sessionids = data[self.session_key].unique()
         data = pd.merge(data, pd.DataFrame({self.session_key: sessionids, 'SessionIdx': np.arange(len(sessionids))}),
                         on=self.session_key, how='inner')
-        print("data", data.head())
+
         supp = data.groupby('SessionIdx').size()
         session_offsets = np.zeros(len(supp) + 1, dtype=np.int32)
         session_offsets[1:] = supp.cumsum()
@@ -143,7 +143,7 @@ class ItemKNN:
         print('Rec@5 is: %.4f, Rec@10 is: %.4f' % (rec5, rec10))
         print('MRR@5 is: %.4f, MRR@10 is: %.4f' % (mrr5, mrr10))
 
-        with open('./itemKNN_results.txt', 'w') as f:
+        with open('../results/itemKNN_results.txt', 'w') as f:
             f.write(str(rec5)[:6] + ' ' + str(rec10)[:6] + ' ' + str(mrr5)[:6] + ' ' + str(mrr10)[:6])
 
     def process_seqs(self, iseqs):
@@ -154,7 +154,7 @@ class ItemKNN:
             for i in range(1, len(seq)):
                 tar = seq[-i]
                 labs += [tar]
-                out_seqs += [seq[:-i]]
+                out_seqs += [seq[-i - 1]]
         return out_seqs, labs
 
 
@@ -162,9 +162,9 @@ if __name__ == '__main__':
 
     dataset = 'Retailrocket'
     if dataset == 'Taobao':
-      session_key = 'SessionId'
-      item_key = 'ItemId'
-      time_key = 'Timestamp'
+        session_key = 'SessionId'
+        item_key = 'ItemId'
+        time_key = 'Timestamp'
     elif dataset == 'Retailrocket':
         session_key = 'SessionId'
         item_key = 'ItemId'
@@ -175,10 +175,6 @@ if __name__ == '__main__':
     data_root = '../data/' + dataset
     interactions = pd.read_csv(os.path.join(data_root, 'train_mini.tsv'), sep='\t')
     test_data = pd.read_csv(os.path.join(data_root, 'test_mini.tsv'), sep='\t')
-
-    # sample
-
-    # sample
 
     print(interactions.head())
 
@@ -194,7 +190,6 @@ if __name__ == '__main__':
     users = interactions[session_key].unique()
     test_users = test_data[session_key].unique()
 
-
     # users = users[:2]
     for user in users:
         clicks = interactions[interactions[session_key] == user]
@@ -209,7 +204,6 @@ if __name__ == '__main__':
     end = datetime.now()
     print('training time: %.4f minutes' % ((end - start).seconds / 60))
 
-
     for user in test_users:
         clicks = test_data[test_data[session_key] == user]
         test_ids.append(clicks[item_key].values)
@@ -217,4 +211,3 @@ if __name__ == '__main__':
     out_seqs, labs = itemknn.process_seqs(test_ids)
 
     itemknn.predict_next(out_seqs, labs)
-
