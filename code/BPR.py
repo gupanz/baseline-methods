@@ -161,7 +161,9 @@ class BPR:
 
 if __name__ == '__main__':
     # taobao
-    dataset = 'Retailrocket'
+    # dataset = 'Retailrocket'
+    dataset = 'Taobao'
+
 
     if dataset == 'Taobao':
         session_key = 'UserId'
@@ -220,19 +222,8 @@ if __name__ == '__main__':
                 mrr_5 += 1 / rank
             rec_10 += 1
             mrr_10 += 1 / rank
-    # for user in users:
-    #     input_item_ids = test_data[test_data[session_key] == user][item_key].values[:-1]
-    #     label = test_data[test_data[session_key] == user][item_key].values[-1]
-    #     preds = bpr.predict_next(input_item_ids, candidates)
-    #     if label in preds:
-    #         rank = np.where(preds == label)[0][0] + 1
-    #         if rank <= 5:
-    #             rec_5 += 1
-    #             mrr_5 += 1 / rank
-    #         rec_10 += 1
-    #         mrr_10 += 1 / rank
 
-    test_num = len(test_users)
+    test_num = len(out_seqs)
     rec5 = rec_5 / test_num
     rec10 = rec_10 / test_num
     mrr5 = mrr_5 / test_num

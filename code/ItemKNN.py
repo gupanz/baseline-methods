@@ -160,7 +160,10 @@ class ItemKNN:
 
 if __name__ == '__main__':
 
-    dataset = 'Retailrocket'
+    # dataset = 'Retailrocket'
+    dataset = 'Taobao'
+
+
     if dataset == 'Taobao':
         session_key = 'SessionId'
         item_key = 'ItemId'
