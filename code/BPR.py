@@ -179,8 +179,6 @@ if __name__ == '__main__':
     test_data = pd.read_csv(os.path.join(data_root, 'test.tsv'), sep='\t')
 
     # sample
-    interactions = interactions.sample(frac=0.2, replace=False, weights=None, random_state=None, axis=0)
-    test_data = test_data.sample(frac=0.2, replace=False, weights=None, random_state=None, axis=0)
     # sample
 
     # interactions = interactions[:1000]
