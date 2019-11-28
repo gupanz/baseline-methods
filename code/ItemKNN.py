@@ -6,6 +6,7 @@
 import os
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 
 class ItemKNN:
@@ -172,8 +173,14 @@ if __name__ == '__main__':
     data_root = '../data/' + dataset
     interactions = pd.read_csv(os.path.join(data_root, 'train.tsv'), sep='\t')
     test_data = pd.read_csv(os.path.join(data_root, 'test.tsv'), sep='\t')
+
+    # sample
+    interactions = interactions.sample(frac=0.2, replace=False, weights=None, random_state=None, axis=0)
+    test_data = test_data.sample(frac=0.2, replace=False, weights=None, random_state=None, axis=0)
+    # sample
+
     print(interactions.head())
-    print("---------")
+
     # interactions = interactions[:1000]
     itemknn = ItemKNN(session_key=session_key, item_key=item_key, time_key=time_key)
     session_ids = []
@@ -198,18 +205,17 @@ if __name__ == '__main__':
     train_data = pd.DataFrame({session_key: session_ids,
                                item_key: item_ids,
                                time_key: ts})
+    start = datetime.now()
     itemknn.fit(train_data)
-    print("item sim done!!!")
+    end = datetime.now()
+    print('training time: %.4f minutes' % ((end - start).seconds / 60))
 
 
     for user in test_users:
         clicks = test_data[test_data[session_key] == user]
         test_ids.append(clicks[item_key].values)
         test_ts.append(clicks[time_key].values)
-    out_seqs, out_dates, labs = itemknn.process_seqs(item_ids, ts)
+    out_seqs, out_dates, labs = itemknn.process_seqs(test_ids, test_ts)
 
     itemknn.predict_next(out_seqs, labs)
-
-# 代码需要改动，现在的逻辑没法保证test中的item全部出现在train中，造成rec和mrr过小
-
 
