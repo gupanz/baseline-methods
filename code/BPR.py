@@ -147,6 +147,31 @@ class BPR:
     def sigmoid(self, x):
         return 1.0 / (1.0 + np.exp(-x))
 
+    def predict(self, out_seqs, labs):
+        rec_5, rec_10 = 0, 0
+        mrr_5, mrr_10 = 0, 0
+
+        for input_item_ids, label in zip(out_seqs, labs):
+            preds = bpr.predict_next(input_item_ids, candidates)
+            if label in preds:
+                rank = np.where(preds == label)[0][0] + 1
+                if rank <= 5:
+                    rec_5 += 1
+                    mrr_5 += 1 / rank
+                rec_10 += 1
+                mrr_10 += 1 / rank
+
+        test_num = len(out_seqs)
+        rec5 = rec_5 / test_num
+        rec10 = rec_10 / test_num
+        mrr5 = mrr_5 / test_num
+        mrr10 = mrr_10 / test_num
+        print('Rec@5 is: %.4f, Rec@10 is: %.4f' % (rec5, rec10))
+        print('MRR@5 is: %.4f, MRR@10 is: %.4f' % (mrr5, mrr10))
+        # with open(os.path.join(data_root, 'results.txt'), 'w') as f:
+        with open('../results/bpr_results.txt', 'w') as f:
+            f.write(str(rec5)[:6] + ' ' + str(rec10)[:6] + ' ' + str(mrr5)[:6] + ' ' + str(mrr10)[:6])
+
     def process_seqs(self, iseqs):
         out_seqs = []
         out_dates = []
@@ -201,8 +226,7 @@ if __name__ == '__main__':
     print('training time: %.4f minutes' % ((end - start).seconds / 60))
 
     # test
-    rec_5, rec_10 = 0, 0
-    mrr_5, mrr_10 = 0, 0
+
     test_users = test_data[session_key].unique()
     candidates = train_data[item_key].unique()
 
@@ -212,24 +236,8 @@ if __name__ == '__main__':
         clicks = test_data[test_data[session_key] == user]
         test_ids.append(clicks[item_key].values)
     out_seqs, labs = bpr.process_seqs(test_ids)
+    print("length of  prediction sequence:", len(out_seqs))
 
-    for input_item_ids, label in zip(out_seqs, labs):
-        preds = bpr.predict_next(input_item_ids, candidates)
-        if label in preds:
-            rank = np.where(preds == label)[0][0] + 1
-            if rank <= 5:
-                rec_5 += 1
-                mrr_5 += 1 / rank
-            rec_10 += 1
-            mrr_10 += 1 / rank
+    bpr.predict(out_seqs, labs)
 
-    test_num = len(out_seqs)
-    rec5 = rec_5 / test_num
-    rec10 = rec_10 / test_num
-    mrr5 = mrr_5 / test_num
-    mrr10 = mrr_10 / test_num
-    print('Rec@5 is: %.4f, Rec@10 is: %.4f' % (rec5, rec10))
-    print('MRR@5 is: %.4f, MRR@10 is: %.4f' % (mrr5, mrr10))
-    # with open(os.path.join(data_root, 'results.txt'), 'w') as f:
-    with open('../results/bpr_results.txt', 'w') as f:
-        f.write(str(rec5)[:6] + ' ' + str(rec10)[:6] + ' ' + str(mrr5)[:6] + ' ' + str(mrr10)[:6])
+

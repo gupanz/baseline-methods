@@ -111,21 +111,23 @@ class ItemKNN:
         out : pandas.Series
             Prediction scores for selected items on how likely to be the next item of this session.
             Indexed by the item IDs.
-
         '''
-        # preds = np.zeros(len(predict_for_item_ids))
-        # sim_list = self.sims[input_item_id]
-        # mask = np.in1d(predict_for_item_ids, sim_list.index)
-        # preds[mask] = sim_list[predict_for_item_ids[mask]]
-        # return pd.Series(data=preds, index=predict_for_item_ids)
-
-        # candidates = self.sims.keys()
         rec_5, rec_10 = 0, 0
         mrr_5, mrr_10 = 0, 0
         for i in range(len(test_ids)):
             test_id = test_ids[i]
-            # if test_id in candidates:
-            preds = self.sims[test_id].index.values
+            predict_items = pd.Series()
+            # calculate the nearest neighbour of all items in the sequence
+            for item in test_id:
+                pred_candidates = self.sims[item]
+                predict_items = predict_items.append(pred_candidates)
+
+            item_sim_dic = {"ItemIdx": predict_items.index, "val": predict_items.values}
+            df_item_sim = pd.DataFrame(item_sim_dic)
+            uitem_sim_dic = dict(df_item_sim.groupby("ItemIdx")["val"].sum())
+            uitem_sim_list = sorted(uitem_sim_dic.items(), key=lambda d: d[1], reverse=True)
+            preds = [i for i, j in uitem_sim_list[:10]]
+
             label = labels[i]
             if label in preds:
                 rank = np.where(preds == label)[0][0] + 1
@@ -148,13 +150,12 @@ class ItemKNN:
 
     def process_seqs(self, iseqs):
         out_seqs = []
-        out_dates = []
         labs = []
         for seq in iseqs:
             for i in range(1, len(seq)):
                 tar = seq[-i]
                 labs += [tar]
-                out_seqs += [seq[-i - 1]]
+                out_seqs += [seq[:-i]]
         return out_seqs, labs
 
 
@@ -162,7 +163,6 @@ if __name__ == '__main__':
 
     # dataset = 'Retailrocket'
     dataset = 'Taobao'
-
 
     if dataset == 'Taobao':
         session_key = 'SessionId'
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     interactions = pd.read_csv(os.path.join(data_root, 'train_mini.tsv'), sep='\t')
     test_data = pd.read_csv(os.path.join(data_root, 'test_mini.tsv'), sep='\t')
 
-    print(interactions.head())
+    # print(interactions.head())
 
     # interactions = interactions[:1000]
     itemknn = ItemKNN(session_key=session_key, item_key=item_key, time_key=time_key)
@@ -212,5 +212,6 @@ if __name__ == '__main__':
         test_ids.append(clicks[item_key].values)
         # test_ts.append(clicks[time_key].values)
     out_seqs, labs = itemknn.process_seqs(test_ids)
+    print("length of  prediction sequence:", len(out_seqs))
 
     itemknn.predict_next(out_seqs, labs)
