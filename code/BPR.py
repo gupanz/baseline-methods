@@ -166,11 +166,11 @@ if __name__ == '__main__':
 
 
     if dataset == 'Taobao':
-        session_key = 'UserId'
+        session_key = 'SessionId'
         item_key = 'ItemId'
 
     elif dataset == 'Retailrocket':
-        session_key = 'UserId'
+        session_key = 'SessionId'
         item_key = 'ItemId'
     else:
         raise FileNotFoundError
