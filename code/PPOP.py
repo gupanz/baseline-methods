@@ -41,6 +41,9 @@ class PPOP:
         print('Rec@5 is: %.4f, Rec@10 is: %.4f' % (rec5, rec10))
         print('MRR@5 is: %.4f, MRR@10 is: %.4f' % (mrr5, mrr10))
 
+        with open('../results/PPOP_results.txt', 'w') as f:
+            f.write(str(rec5)[:6] + ' ' + str(rec10)[:6] + ' ' + str(mrr5)[:6] + ' ' + str(mrr10)[:6])
+
     def process_seqs(self, iseqs):
         out_seqs = []
         labs = []
