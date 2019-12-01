@@ -71,7 +71,7 @@ if __name__ == '__main__':
         raise FileNotFoundError
 
     data_root = '../data/' + dataset
-    test_data = pd.read_csv(os.path.join(data_root, 'test_mini.tsv'), sep='\t')
+    test_data = pd.read_csv(os.path.join(data_root, 'test.tsv'), sep='\t')
     test_users = test_data[session_key].unique()
     test_ids = []
 
