@@ -37,7 +37,7 @@ class ItemKNN:
 
     '''
 
-    def __init__(self, n_sims=10, lmbd=20, alpha=0.5, session_key='session_id', item_key='item_id', time_key='ts'):
+    def __init__(self, n_sims=20, lmbd=20, alpha=0.5, session_key='session_id', item_key='item_id', time_key='ts'):
         self.n_sims = n_sims
         self.lmbd = lmbd
         self.alpha = alpha
@@ -57,13 +57,17 @@ class ItemKNN:
             It must have a header. Column names are arbitrary, but must correspond to the ones you set
             during the initialization of the network (session_key, item_key, time_key properties).
         '''
-        data.set_index(np.arange(len(data)), inplace=True)
+
         itemids = data[self.item_key].unique()
-        n_items = len(itemids)
-        data = pd.merge(data, pd.DataFrame({self.item_key: itemids, 'ItemIdx': np.arange(len(itemids))}),
-                        on=self.item_key, how='inner')
+        self.itemids = itemids
+        self.n_items = len(itemids)
+        self.itemidmap = pd.Series(data=np.arange(self.n_items), index=itemids)
+
         sessionids = data[self.session_key].unique()
-        data = pd.merge(data, pd.DataFrame({self.session_key: sessionids, 'SessionIdx': np.arange(len(sessionids))}),
+        self.n_sessions = len(sessionids)
+        data = pd.merge(data, pd.DataFrame({self.item_key: itemids, 'ItemIdx': np.arange(self.n_items)}),
+                        on=self.item_key, how='inner')
+        data = pd.merge(data, pd.DataFrame({self.session_key: sessionids, 'SessionIdx': np.arange(self.n_sessions)}),
                         on=self.session_key, how='inner')
 
         supp = data.groupby('SessionIdx').size()
@@ -71,12 +75,12 @@ class ItemKNN:
         session_offsets[1:] = supp.cumsum()
         index_by_sessions = data.sort_values(['SessionIdx', self.time_key]).index.values
         supp = data.groupby('ItemIdx').size()
-        item_offsets = np.zeros(n_items + 1, dtype=np.int32)
+        item_offsets = np.zeros(self.n_items + 1, dtype=np.int32)
         item_offsets[1:] = supp.cumsum()
         index_by_items = data.sort_values(['ItemIdx', self.time_key]).index.values
         self.sims = dict()
-        for i in range(n_items):
-            iarray = np.zeros(n_items)
+        for i in range(self.n_items):
+            iarray = np.zeros(self.n_items)
             start = item_offsets[i]
             end = item_offsets[i + 1]
             for e in index_by_items[start:end]:
@@ -91,6 +95,7 @@ class ItemKNN:
             iarray = iarray / norm
             indices = np.argsort(iarray)[-1:-1 - self.n_sims:-1]
             self.sims[itemids[i]] = pd.Series(data=iarray[indices], index=itemids[indices])
+
 
     def predict_next(self, test_ids, labels):
         '''
@@ -112,8 +117,8 @@ class ItemKNN:
             Prediction scores for selected items on how likely to be the next item of this session.
             Indexed by the item IDs.
         '''
-        rec_5, rec_10 = 0, 0
-        mrr_5, mrr_10 = 0, 0
+        rec_10, rec_20 = 0, 0
+        mrr_10, mrr_20 = 0, 0
         for i in range(len(test_ids)):
             test_id = test_ids[i]
             predict_items = pd.Series()
@@ -126,27 +131,27 @@ class ItemKNN:
             df_item_sim = pd.DataFrame(item_sim_dic)
             uitem_sim_dic = dict(df_item_sim.groupby("ItemIdx")["val"].sum())
             uitem_sim_list = sorted(uitem_sim_dic.items(), key=lambda d: d[1], reverse=True)
-            preds = [i for i, j in uitem_sim_list[:10]]
+            preds = [i for i, j in uitem_sim_list[:self.n_sims]]
 
             label = labels[i]
             if label in preds:
                 rank = np.where(preds == label)[0][0] + 1
-                if rank <= 5:
-                    rec_5 += 1
-                    mrr_5 += 1 / rank
-                rec_10 += 1
-                mrr_10 += 1 / rank
+                if rank <= 10:
+                    rec_10 += 1
+                    mrr_10 += 1 / rank
+                rec_20 += 1
+                mrr_20 += 1 / rank
 
         test_num = len(test_ids)
-        rec5 = rec_5 / test_num
         rec10 = rec_10 / test_num
-        mrr5 = mrr_5 / test_num
+        rec20 = rec_20 / test_num
         mrr10 = mrr_10 / test_num
-        print('Rec@5 is: %.4f, Rec@10 is: %.4f' % (rec5, rec10))
-        print('MRR@5 is: %.4f, MRR@10 is: %.4f' % (mrr5, mrr10))
+        mrr20 = mrr_20 / test_num
+        print('Rec@10 is: %.4f, Rec@20 is: %.4f' % (rec10, rec20))
+        print('MRR@10 is: %.4f, MRR@20 is: %.4f' % (mrr10, mrr20))
 
         with open('../results/itemKNN_results.txt', 'w') as f:
-            f.write(str(rec5)[:6] + ' ' + str(rec10)[:6] + ' ' + str(mrr5)[:6] + ' ' + str(mrr10)[:6])
+            f.write(str(rec10)[:6] + ' ' + str(rec20)[:6] + ' ' + str(mrr10)[:6] + ' ' + str(mrr20)[:6])
 
     def process_seqs(self, iseqs):
         out_seqs = []
@@ -162,7 +167,11 @@ class ItemKNN:
 if __name__ == '__main__':
 
     # dataset = 'Retailrocket'
-    dataset = 'Taobao'
+    dataset = 'TaobaoMini'
+
+    session_key = 'SessionId'
+    item_key = 'ItemId'
+    time_key = 'Timestamp'
 
     if dataset == 'Taobao':
         session_key = 'SessionId'
@@ -172,8 +181,7 @@ if __name__ == '__main__':
         session_key = 'SessionId'
         item_key = 'ItemId'
         time_key = 'Timestamp'
-    else:
-        raise FileNotFoundError
+
 
     data_root = '../data/' + dataset
     interactions = pd.read_csv(os.path.join(data_root, 'train.tsv'), sep='\t')

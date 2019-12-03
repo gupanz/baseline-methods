@@ -50,8 +50,7 @@ def add_session(train, day):
     return train
 
 
-def filter_data(train,ITEM_MIN,USER_MIN,MAX_LENGTH):
-
+def filter_data(train, ITEM_MIN, USER_MIN, MAX_LENGTH):
     train = train[train['ItemId'].groupby(train['ItemId']).transform('size') >= ITEM_MIN]
     train = train[train['UserId'].groupby(train['UserId']).transform('size') >= USER_MIN]
     train = train[train['SessionId'].groupby(train['SessionId']).transform('size') > 1]
@@ -136,20 +135,20 @@ def split_data(train, ITEM_MIN):
     valid = valid.sort_values(by=["SessionId", "Timestamp"], ascending=[True, True])
     test = test.sort_values(by=["SessionId", "Timestamp"], ascending=[True, True])
 
-    train_tr.to_csv('./data/Taobao/train.tsv', sep='\t', index=False)
-    valid.to_csv('./data/Taobao/valid.tsv', sep='\t', index=False)
-    test.to_csv('./data/Taobao/test.tsv', sep='\t', index=False)
+    train_tr.to_csv('../data/Taobao/train.tsv', sep='\t', index=False)
+    valid.to_csv('../data/Taobao/valid.tsv', sep='\t', index=False)
+    test.to_csv('../data/Taobao/test.tsv', sep='\t', index=False)
 
 
 if __name__ == '__main__':
     day = 1
     leftValue = '2017.11.25 00:00:00'
     rightValue = '2017.12.04 00:00:00'
-    train = load_data(fn='./data/Taobao/UserBehavior.csv')
+    train = load_data(fn='../data/Taobao/UserBehavior.csv', user_cnt=100000)
     train = filter_time(train, leftValue, rightValue)
     train = add_session(train, day)
     ITEM_MIN = 44
     USER_MIN = 25
     MAX_LENGTH = 50
     train = filter_data(train, ITEM_MIN, USER_MIN, MAX_LENGTH)
-    train = split_data(train)
+    split_data(train, ITEM_MIN)

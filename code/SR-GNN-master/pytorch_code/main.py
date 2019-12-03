@@ -5,7 +5,8 @@ Created on July, 2018
 
 @author: Tangrizzly
 """
-
+import pandas as pd
+import os
 import argparse
 import pickle
 import time
@@ -13,7 +14,7 @@ from utils import build_graph, Data, split_validation
 from model import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', default='sample', help='dataset name: diginetica/yoochoose1_4/yoochoose1_64/sample')
+parser.add_argument('--dataset', default='TaobaoMini', help='dataset name: Taobao/Retailrocket/TaobaoMini/sample')
 parser.add_argument('--batchSize', type=int, default=100, help='input batch size')
 parser.add_argument('--hiddenSize', type=int, default=100, help='hidden state size')
 parser.add_argument('--epoch', type=int, default=30, help='the number of epochs to train for')
@@ -30,24 +31,65 @@ opt = parser.parse_args()
 print(opt)
 
 
+def preprocess(train_data):
+    session_key = 'SessionId'
+    item_key = 'ItemId'
+    time_key = 'Timestamp'
+    ids = []
+
+    users = train_data[session_key].unique()
+    for user in users:
+        clicks = train_data[train_data[session_key] == user]
+        ids.append(clicks[item_key].values)
+
+    def process_seqs(iseqs):
+        out_seqs = []
+        labs = []
+        for seq in iseqs:
+            for i in range(1, len(seq)):
+                tar = seq[-i]
+                labs += [tar]
+                out_seqs += [seq[:-i]]
+        return out_seqs, labs
+    out_seqs, labs = process_seqs(ids)
+    print(len(out_seqs))
+
+    tra = (out_seqs, labs)
+    return tra
+
 def main():
-    train_data = pickle.load(open('../datasets/' + opt.dataset + '/train.txt', 'rb'))
-    if opt.validation:
-        train_data, valid_data = split_validation(train_data, opt.valid_portion)
-        test_data = valid_data
-    else:
-        test_data = pickle.load(open('../datasets/' + opt.dataset + '/test.txt', 'rb'))
-    # all_train_seq = pickle.load(open('../datasets/' + opt.dataset + '/all_train_seq.txt', 'rb'))
-    # g = build_graph(all_train_seq)
+    # dataset = 'Retailrocket'
+    # opt.dataset = 'Taobao'
+    start = time.time()
+    data_root = '../../../data/' + opt.dataset
+    train_data = pd.read_csv(os.path.join(data_root, 'train.tsv'), sep='\t')
+    test_data = pd.read_csv(os.path.join(data_root, 'test.tsv'), sep='\t')
+    train_data = preprocess(train_data)
+    test_data = preprocess(test_data)
+    print('-------------------------------------------------------')
+    end = time.time()
+    print("Run time: %f s" % (end - start))
+
+    # train_data = pickle.load(open('../datasets/' + opt.dataset + '/train.txt', 'rb'))
+    # if opt.validation:
+    #     train_data, valid_data = split_validation(train_data, opt.valid_portion)
+    #     test_data = valid_data
+    # else:
+    #     test_data = pickle.load(open('../datasets/' + opt.dataset + '/test.txt', 'rb'))
+
     train_data = Data(train_data, shuffle=True)
     test_data = Data(test_data, shuffle=False)
+    if opt.dataset == "Taobao":
+        n_node = 13743
+    elif opt.dataset == "TaobaoMini":
+        n_node = 4750
     # del all_train_seq, g
-    if opt.dataset == 'diginetica':
-        n_node = 43098
-    elif opt.dataset == 'yoochoose1_64' or opt.dataset == 'yoochoose1_4':
-        n_node = 37484
-    else:
-        n_node = 310
+    # if opt.dataset == 'diginetica':
+    #     n_node = 43098
+    # elif opt.dataset == 'yoochoose1_64' or opt.dataset == 'yoochoose1_4':
+    #     n_node = 37484
+    # else:
+    #     n_node = 310
 
     model = trans_to_cuda(SessionGraph(opt, n_node))
 
